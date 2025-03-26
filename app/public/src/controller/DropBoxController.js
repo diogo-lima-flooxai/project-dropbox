@@ -242,7 +242,7 @@ class DropBoxController {
   
         case 'image/jpeg':
         case 'image/jpg':
-        case 'image/png':
+        case 'image/.png':
         case 'image/gif': 
           return `
             <svg version="1.1" id="Camada_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="160px" height="160px" viewBox="0 0 160 160" enable-background="new 0 0 160 160" xml:space="preserve">
@@ -339,6 +339,42 @@ class DropBoxController {
 
   initEventsLi(li){
     li.addEventListener('click', e=>{
+
+      if(e.shiftKey){
+        let firstLi = this.listFilesEl.querySelector('.selected');
+
+        if (firstLi){
+
+          let indexStart;
+          let indexEnd;
+          let lis = li.parentElement.childNodes
+
+          lis.forEach((el, index)=>{
+
+            if(firstLi === el) indexStart = index;
+            if(li === el) indexEnd = index;
+          });
+
+          let index = [indexStart, indexEnd].sort()
+
+          lis.forEach((el, i)=>{
+            if(i >= index[0] && i <= index[i]){
+              el.classList.add('selected');
+            }
+          })
+
+          return true;
+        }
+      }
+
+      if(!e.ctrlKey){
+        this.listFilesEl.querySelectorAll('li.selected').forEach(el=>{
+
+          el.classList.remove('selected');
+
+        });
+      }
+
       li.classList.toggle('selected');
     });
   }
