@@ -23,15 +23,17 @@ class DropBoxController {
   }
 
   connectFirebase() {
-    const firebaseConfig = {
-      apiKey: "AIzaSyARzjeYOgyE3SiBkI5XjBDcNRkH0cOz_DI",
-      authDomain: "dropbox-projeto.firebaseapp.com",
-      projectId: "dropbox-projeto",
-      storageBucket: "dropbox-projeto.firebasestorage.app",
-      messagingSenderId: "435735544467",
-      appId: "1:435735544467:web:0be2ca2e8e449da92dc366",
-      measurementId: "G-J5DXDXXSD0",
-      databaseURL: "https://dropbox-projeto-default-rtdb.firebaseio.com/",
+    const firebaseConfig =
+      {
+        apiKey: "AIzaSyD7yjq0op9USzbFilFQj1rN4Gfk7R8Zwmc",
+        authDomain: "dropbox-clone-fcd61.firebaseapp.com",
+        databaseURL: "https://dropbox-clone-fcd61-default-rtdb.firebaseio.com",
+        projectId: "dropbox-clone-fcd61",
+        storageBucket: "dropbox-clone-fcd61.firebasestorage.app",
+        messagingSenderId: "435680443305",
+        appId: "1:435680443305:web:9da5d5be913b6738a622b8",
+        measurementId: "G-FLE1QC7L91",
+        databaseURL: "https://dropbox-projeto-default-rtdb.firebaseio.com/",
     };
 
     // Initialize Firebase
@@ -42,6 +44,48 @@ class DropBoxController {
     return this.listFilesEl.querySelectorAll(".selected");
   }
 
+  removeFolderTask(ref, name) {
+    return new Promise((resolve, reject) => {
+      let folderRef = this.getFirebaseRef(ref + '/' + name);
+
+      folderRef.on('value', snapshot => {
+
+        folderRef.off('value');
+
+        snapshot.forEach(item => {
+
+          let data = item.val();
+          data.key = item.key;
+
+          if (data.type === 'folder') {
+            this.removeFolderTask(ref + '/' + name, data.name).then(() => {
+              resolve({
+                fields: {
+                  key: data.key
+                }
+              })
+            }).catch(err => {
+              reject(err);
+            });
+          } else if (data.type) {
+            this.removeFile(ref + '/' + name, data.name).then(() => {
+              resolve({
+                fields: {
+                  key: data.key
+                }
+              })
+            }).catch(err => {
+              reject(err);
+            })
+          }
+
+        })
+
+        folderRef.remove();
+      })
+    })
+  }
+
   removeTask() {
     let promises = [];
 
@@ -50,22 +94,39 @@ class DropBoxController {
       let key = li.dataset.key;
 
       promises.push(new Promise((resolve, reject) => {
-        let fileRef = firebase.storage().ref(this.currentFolder.join('/')).child(file.name);
 
-        fileRef.delete().then(() =>{
-          resolve({
-            fields:{
-              key
-            }
-          })
-        }).catch(err=>{
-          reject(err);
-        });
-      }))
+        if (file.type === 'folder') {
+
+          this.removeFolderTask(this.currentFolder.join('/'), file.name).then(() => {
+            resolve({
+              fields: {
+                key
+              }
+            });
+          });
+
+        } else if (file.type) {
+          this.removeFile(this.currentFolder.join('/'), file.name).then(() => {
+            resolve({
+              fields: {
+                key
+              }
+            });
+          });
+        }
+
+      }));
 
     });
     
     return Promise.all(promises);
+  }
+
+  removeFile(ref, name) {
+    let fileRef = firebase.storage().ref(ref).child(name);
+
+    return fileRef.delete();
+      
   }
 
   initEvents() {
@@ -537,7 +598,7 @@ class DropBoxController {
           break;
 
         default:
-          window.open('/file?path=' + file.path)
+          window.open(file.path)
       }
 
     })
